@@ -164,7 +164,7 @@ jobs:
           # 更新 Ubuntu 的软件包列表
           sudo -E apt-get -y -qq update
 
-          # sudo apt-get install -y libgdbm-dev libsqlite3-dev tk-dev libbz2-dev "gcc-aarch64-linux-gnu"
+          # sudo apt-get install -y libgdbm-dev libsqlite3-dev tk-dev libbz2-dev
           packages_install=(
             "ack"
             "antlr3"
@@ -241,6 +241,7 @@ jobs:
             "xxd"
             "zlib1g-dev"
             "libdb++-dev"
+            "gcc-aarch64-linux-gnu"
             "flex"
             "jq"
           )
