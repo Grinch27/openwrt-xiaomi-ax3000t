@@ -244,7 +244,7 @@ jobs:
             "flex"
             "jq"
           )
-          sudo -E apt-get -y install "${packages_install[@]}"
+          sudo -E apt-get -y -qq install "${packages_install[@]}"
 
           # 删除所有不再需要的软件包及其配置文件, 清理 apt 的缓存
           sudo -E apt-get -qq -y autoremove --purge
