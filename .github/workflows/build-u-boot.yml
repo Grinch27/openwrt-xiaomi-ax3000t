@@ -131,18 +131,7 @@ jobs:
           sudo swapoff -a
           sudo rm -f /swapfile /mnt/swapfile
 
-          df -Th
-          echo "status=success" >> ${GITHUB_OUTPUT}
-
-      - name: Initialization environment
-        id: init
-        env:
-          DEBIAN_FRONTEND: noninteractive
-          TZ: UTC
-        working-directory: /
-        run: |
-          echo -e "Current working directory: $(pwd)"
-
+          # 删除所有不再需要的软件包及其配置文件, 清理 apt 的缓存
           packages_purge=(
             "azure-cli*"
             "docker*"
@@ -157,6 +146,23 @@ jobs:
             "mongodb*"
             "moby*"
           )
+          sudo -E apt-get -qq -y update
+          sudo -E apt-get -qq -y purge "${packages_purge[@]}" || true
+          sudo -E apt-get -qq -y autoremove --purge
+          sudo -E apt-get -qq clean
+
+          df -Th
+          echo "status=success" >> ${GITHUB_OUTPUT}
+
+      - name: Initialization environment
+        id: init
+        env:
+          DEBIAN_FRONTEND: noninteractive
+          TZ: UTC
+        working-directory: /
+        run: |
+          echo -e "Current working directory: $(pwd)"
+
           packages_install=(
             "ack"
             "antlr3"
@@ -236,12 +242,6 @@ jobs:
             "flex"
             "jq"
           )
-
-          # 删除所有不再需要的软件包及其配置文件, 清理 apt 的缓存，同时清理即将安装的软件包列表中的软件包，以确保安装的是最新版本
-          sudo -E apt-get -qq -y update
-          sudo -E apt-get -qq -y purge "${packages_purge[@]}" "${packages_install[@]}" || true
-          sudo -E apt-get -qq -y autoremove --purge
-          sudo -E apt-get -qq clean
 
           # 安装软件包
           sudo -E apt-get -qq -y update
