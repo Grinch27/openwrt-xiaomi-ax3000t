@@ -342,10 +342,11 @@ jobs:
             ["jdcloud_re-cp-03"]="mt7986" # JDCloud RE-CP-03
             ["glinet_gl-mt6000"]="mt7986" # glinet gl-mt6000
             ["nokia_ea0326gmp"]="mt7981" # nokia ea0326gmp
-            ["ruijie_rg-x30e"]="mt7981" # Ruijie RG-X30E
-            ["ruijie_rg-x30e-pro"]="mt7981" # Ruijie RG-X30E Pro
+            ["ruijie_rg_x30e"]="mt7981" # Ruijie RG-X30E
+            ["ruijie_rg_x30e_pro"]="mt7981" # Ruijie RG-X30E Pro
             ["tplink_tl-xtr8488"]="mt7986" # TP-Link TL-XTR8488
           )
+          ruijie_rg_x30e_multi_layout_defconfig
 
           # ========== MULTI_LAYOUT off ==========
           arg_MULTI_LAYOUT="0"
@@ -381,8 +382,8 @@ jobs:
             ["redmi_ax6000"]="mt7986" # 红米 AX6000
             ["clt_r30b1"]="mt7981" # 创联腾 CLT-R30B1
             ["ruijie_rg-x60-pro"]="mt7986" # Ruijie RG-X60 Pro
-            ["ruijie_rg-x30e"]="mt7981" # Ruijie RG-X30E
-            ["ruijie_rg-x30e-pro"]="mt7981" # Ruijie RG-X30E Pro
+            ["ruijie_rg_x30e"]="mt7981" # Ruijie RG-X30E
+            ["ruijie_rg_x30e_pro"]="mt7981" # Ruijie RG-X30E Pro
           )
 
           echo -e "========== MULTI_LAYOUT=${arg_MULTI_LAYOUT} FIXED_MTDPARTS=${arg_FIXED_MTDPARTS} =========="
