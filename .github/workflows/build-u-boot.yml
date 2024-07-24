@@ -325,60 +325,63 @@ jobs:
             local BOARD=$2
             local MULTI_LAYOUT=$3
             local FIXED_MTDPARTS=$4
-
             echo -e "Current working directory: $(pwd)"
             echo -e "---------- Compile U-Boot of ${BOARD} ----------"
             SOC=${SOC} BOARD=${BOARD} MULTI_LAYOUT=${MULTI_LAYOUT} FIXED_MTDPARTS=${FIXED_MTDPARTS} ./build.sh
             cp -rf ./output/* ${path_output}
           }
 
-          # BOARD SOC MULTI_LAYOUT FIXED_MTDPARTS
-          declare -A BOARD_PARAMS=(
-            ["360t7"]="mt7981 0 1" # 360 T7/T7U/T7M
-            ["livinet_zr-3020"]="mt7981 0 1" # ZR3020
-            ["cetron_ct3003"]="mt7981 0 1" # Cetron CT3003
-            ["jcg_q30"]="mt7981 0 1" # JCG Q30 PRO
-            ["konka_komi-a31"]="mt7981 0 1" # 康佳 KOMI-A31
-            ["wr30u"]="mt7981 0 1" # 小米 WR30U/T/M
-            ["imou_lc-hx3001"]="mt7981 0 1" # 乐橙 LC-HX3001
-            ["clt_r30b1"]="mt7981 0 1" # 创联腾 CLT-R30B1
-            ["abt_asr3000"]="mt7981 0 1" # 安博通 ABT ASR3000
-            ["cmcc_a10"]="mt7981 0 1" # CMCC A10
-            ["cmcc_rax3000m"]="mt7981 0 1" # CMCC RAX3000M (SPI-NAND)
-            ["cmcc_rax3000m-emmc"]="mt7981 0 1" # CMCC RAX3000M (EMMC)
-            ["h3c_magic-nx30-pro"]="mt7981 0 1" # H3C NX30 Pro
-            ["ax3000t"]="mt7981 0 1" # 小米 AX3000T
-            ["redmi_ax6000"]="mt7986 0 1" # 红米 AX6000
-            ["tplink_tl-xdr608x"]="mt7986 0 1" # TP-LINK XDR4288/6086/6088
-            ["ruijie_rg-x60-pro"]="mt7986 0 1" # Ruijie RG-X60 Pro
-            ["jdcloud_re-cp-03"]="mt7986 0 1" # JDCloud RE-CP-03
-            ["glinet_gl-mt6000"]="mt7986 0 1" # glinet gl-mt6000
-            ["nokia_ea0326gmp"]="mt7981 0 1" # nokia ea0326gmp
-            ["nokia_ea0326gmp"]="mt7981 0 0" # nokia ea0326gmp no FIXED_MTDPARTS
-            ["ruijie_rg_x30e"]="mt7981 0 1" # Ruijie RG-X30E
-            ["ruijie_rg_x30e_pro"]="mt7981 0 1" # Ruijie RG-X30E Pro
-            ["tplink_tl-xtr8488"]="mt7986 0 1" # TP-Link TL-XTR8488
-            ["wr30u_multi"]="mt7981 1 1" # 小米 WR30U/T/M with MULTI_LAYOUT
-            ["ax3000t_multi"]="mt7981 1 1" # 小米 AX3000T with MULTI_LAYOUT
-            ["redmi_ax6000_multi"]="mt7986 1 1" # 红米 AX6000 with MULTI_LAYOUT
-            ["clt_r30b1_multi"]="mt7981 1 1" # 创联腾 CLT-R30B1 with MULTI_LAYOUT
-            ["ruijie_rg-x60-pro_multi"]="mt7986 1 1" # Ruijie RG-X60 Pro with MULTI_LAYOUT
-            ["ruijie_rg_x30e_multi"]="mt7981 1 1" # Ruijie RG-X30E with MULTI_LAYOUT
-            ["ruijie_rg_x30e_pro_multi"]="mt7981 1 1" # Ruijie RG-X30E Pro with MULTI_LAYOUT
-          )
-
-          for BOARD in "${!BOARD_PARAMS[@]}"; do
-            PARAMS=(${BOARD_PARAMS[$BOARD]})
-            arg_SOC=${PARAMS[0]}
-            arg_MULTI_LAYOUT=${PARAMS[1]}
-            arg_FIXED_MTDPARTS=${PARAMS[2]}
-
-            cd ${path_build}
-            rm -rf ${path_openwrt}
-            cp -rf ${path_backup}/${openwrt_branch} ${path_build}
-            cd ${path_openwrt}
+          process_board_params() {
+            local BOARD=$1
+            local SOC=$2
+            local OTHER_PARAMS=("${@:3}") # 从第三个参数开始获取所有参数，存储到 OTHER_PARAMS 数组中
             
-            compile_uboot ${arg_SOC} ${BOARD} ${arg_MULTI_LAYOUT} ${arg_FIXED_MTDPARTS}
+            local MULTI_LAYOUT_VALUES=${OTHER_PARAMS[0]:-"0"}
+            local FIXED_MTDPARTS_VALUES=${OTHER_PARAMS[1]:-"0"}
+            
+            IFS=',' read -ra MULTI_LAYOUT_ARRAY <<< "${MULTI_LAYOUT_VALUES}"
+            IFS=',' read -ra FIXED_MTDPARTS_ARRAY <<< "${FIXED_MTDPARTS_VALUES}"
+            
+            for MULTI_LAYOUT in "${MULTI_LAYOUT_ARRAY[@]}"; do
+              for FIXED_MTDPARTS in "${FIXED_MTDPARTS_ARRAY[@]}"; do
+                cd "${path_build}"
+                rm -rf "${path_openwrt}"
+                cp -rf "${path_backup}/${openwrt_branch}" "${path_build}"
+                cd "${path_openwrt}"
+                compile_uboot "${SOC}" "${BOARD}" "${MULTI_LAYOUT}" "${FIXED_MTDPARTS}"
+              done
+            done
+          }
+
+          # [BOARD] SOC | MULTI_LAYOUT | FIXED_MTDPARTS
+          declare -A BOARD_PARAMS=(
+            ["360t7"]="mt7981|0|0,1" # 360 T7/T7U/T7M
+            ["livinet_zr-3020"]="mt7981|0|0,1" # ZR3020
+            ["cetron_ct3003"]="mt7981|0|0,1" # Cetron CT3003
+            ["jcg_q30"]="mt7981|0|0,1" # JCG Q30 PRO
+            ["konka_komi-a31"]="mt7981|0|0,1" # 康佳 KOMI-A31
+            ["wr30u"]="mt7981|0,1|0,1" # 小米 WR30U/T/M [with MULTI_LAYOUT]
+            ["imou_lc-hx3001"]="mt7981|0|0,1" # 乐橙 LC-HX3001
+            ["clt_r30b1"]="mt7981|0,1|0,1" # 创联腾 CLT-R30B1 [with MULTI_LAYOUT]
+            ["abt_asr3000"]="mt7981|0|0,1" # 安博通 ABT ASR3000
+            ["cmcc_a10"]="mt7981|0|0,1" # CMCC A10
+            ["cmcc_rax3000m"]="mt7981|0|0,1" # CMCC RAX3000M (SPI-NAND)
+            ["cmcc_rax3000m-emmc"]="mt7981|0|0,1" # CMCC RAX3000M (EMMC)
+            ["h3c_magic-nx30-pro"]="mt7981|0|0,1" # H3C NX30 Pro
+            ["ax3000t"]="mt7981|0,1|0,1" # 小米 AX3000T [with MULTI_LAYOUT]
+            ["redmi_ax6000"]="mt7986|0,1|0,1" # 红米 AX6000 [with MULTI_LAYOUT]
+            ["tplink_tl-xdr608x"]="mt7986|0|0,1" # TP-LINK XDR4288/6086/6088
+            ["ruijie_rg-x60-pro"]="mt7986|0,1|0,1" # Ruijie RG-X60 Pro [with MULTI_LAYOUT]
+            ["jdcloud_re-cp-03"]="mt7986|0|0,1" # JDCloud RE-CP-03
+            ["glinet_gl-mt6000"]="mt7986|0|0,1" # glinet gl-mt6000
+            ["nokia_ea0326gmp"]="mt7981|0|1,0" # nokia ea0326gmp with and without FIXED_MTDPARTS
+            ["ruijie_rg_x30e"]="mt7981|0,1|0,1" # Ruijie RG-X30E [with MULTI_LAYOUT]
+            ["ruijie_rg_x30e_pro"]="mt7981|0,1|0,1" # Ruijie RG-X30E Pro [with MULTI_LAYOUT]
+            ["tplink_tl-xtr8488"]="mt7986|0|0,1" # TP-Link TL-XTR8488
+          )
+          for BOARD in "${!BOARD_PARAMS[@]}"; do
+            IFS='|' read -ra PARAMS <<< "${BOARD_PARAMS[$BOARD]}"
+            process_board_params "${BOARD}" "${PARAMS[0]}" "${PARAMS[@]:1}" # 将SOC单独传递，其余参数作为数组传递
           done
 
           echo -e "========== Build Finished =========="
