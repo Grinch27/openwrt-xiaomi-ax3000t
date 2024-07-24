@@ -163,6 +163,7 @@ jobs:
         run: |
           echo -e "Current working directory: $(pwd)"
 
+          # 安装软件包
           packages_install=(
             "ack"
             "antlr3"
@@ -242,13 +243,12 @@ jobs:
             "flex"
             "jq"
           )
-
-          # 安装软件包
           sudo -E apt-get -qq -y update
           sudo -E apt-get -y install "${packages_install[@]}"
           sudo -E apt-get -y install "gcc-aarch64-linux-gnu"
           sudo -E apt-get -qq -y autoremove --purge
           sudo -E apt-get -qq clean
+
           # 设置系统的时区为环境变量 TZ 指定的值
           sudo timedatectl set-timezone "${{ env.TZ }}"
           sudo -E systemctl daemon-reload
@@ -346,7 +346,6 @@ jobs:
             ["ruijie_rg_x30e_pro"]="mt7981" # Ruijie RG-X30E Pro
             ["tplink_tl-xtr8488"]="mt7986" # TP-Link TL-XTR8488
           )
-          ruijie_rg_x30e_multi_layout_defconfig
 
           # ========== MULTI_LAYOUT off ==========
           arg_MULTI_LAYOUT="0"
