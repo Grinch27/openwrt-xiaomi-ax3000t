@@ -131,8 +131,18 @@ jobs:
           sudo swapoff -a
           sudo rm -f /swapfile /mnt/swapfile
 
-          # 删除所有不再需要的软件包及其配置文件, 清理 apt 的缓存
-          # sudo -E apt-get -y -qq purge azure-cli* docker* ghc* zulu* llvm* firefox google* dotnet* powershell openjdk* mongodb* moby* || true
+          df -Th
+          echo "status=success" >> ${GITHUB_OUTPUT}
+
+      - name: Initialization environment
+        id: init
+        env:
+          DEBIAN_FRONTEND: noninteractive
+          TZ: UTC
+        working-directory: /
+        run: |
+          echo -e "Current working directory: $(pwd)"
+
           packages_purge=(
             "azure-cli*"
             "docker*"
@@ -147,24 +157,6 @@ jobs:
             "mongodb*"
             "moby*"
           )
-          sudo -E apt-get -y -qq purge "${packages_purge[@]}" || true
-          sudo -E apt-get -qq -y autoremove --purge
-
-          df -Th
-          echo "status=success" >> ${GITHUB_OUTPUT}
-
-      - name: Initialization environment
-        id: init
-        env:
-          DEBIAN_FRONTEND: noninteractive
-          TZ: UTC
-        working-directory: /
-        run: |
-          echo -e "Current working directory: $(pwd)"
-          # 更新 Ubuntu 的软件包列表
-          sudo -E apt-get -y -qq update
-
-          # sudo apt-get install -y libgdbm-dev libsqlite3-dev tk-dev libbz2-dev
           packages_install=(
             "ack"
             "antlr3"
@@ -245,9 +237,17 @@ jobs:
             "flex"
             "jq"
           )
-          sudo -E apt-get -y -qq install "${packages_install[@]}"
 
-          # 删除所有不再需要的软件包及其配置文件, 清理 apt 的缓存
+          # 更新 Ubuntu 的软件包列表
+          sudo -E apt-get -qq -y update
+          # 删除所有不再需要的软件包及其配置文件, 清理 apt 的缓存，同时清理即将安装的软件包列表中的软件包，以确保安装的是最新版本
+          sudo -E apt-get -qq -y purge "${packages_purge[@]}" "${packages_install[@]}" || true
+          sudo -E apt-get -qq -y autoremove --purge
+          sudo -E apt-get -qq clean
+
+          # 安装软件包
+          sudo -E apt-get -qq -y update
+          sudo -E apt-get -y install "${packages_install[@]}"
           sudo -E apt-get -qq -y autoremove --purge
           sudo -E apt-get -qq clean
           # 设置系统的时区为环境变量 TZ 指定的值
