@@ -78,6 +78,7 @@ jobs:
 
           path_diy="${path_openwrt}/${dir_diy}"
           path_diy_branch="${path_diy}/${openwrt_branch}"
+          release_md="${path_diy_branch}/release.md"
 
           # ========== GITHUB_ENV ==========
           env_vars=(
@@ -324,10 +325,10 @@ jobs:
             local device=$1
             local params=$2
             IFS='|' read -ra PARAMS <<< "$params"
-            split_board_params "$device" "${PARAMS[0]}" "${PARAMS[@]:1}"
+            split_device_params "$device" "${PARAMS[0]}" "${PARAMS[@]:1}"
           }
 
-          split_board_params() {
+          split_device_params() {
             local BOARD=$1
             local SOC=$2
             local OTHER_PARAMS=("${@:3}") # 从第三个参数开始获取所有参数，存储到 OTHER_PARAMS 数组中
@@ -420,6 +421,42 @@ jobs:
           echo -e "timestamp=$(date +"%y%mw%V")" >> ${GITHUB_OUTPUT}
           echo "status=success" >> ${GITHUB_OUTPUT}
 
+      - name: "[release.md] Record release.md"
+        id: record
+        working-directory: ${{ env.path_openwrt }}
+        env:
+          release_md: ${{ env.release_md }}
+        run: |
+          printf "Current working directory: %s\n" "$(pwd)"
+
+          # 提取release_md变量中的目录路径，检查目录是否存在，如果不存在则创建
+          release_md_dir=$(dirname ${release_md})
+          mkdir -p ${release_md_dir}
+          # 确保release.md文件存在
+          : > ${release_md}
+
+          # 模块化记录函数
+          record_to_markdown() {
+            local title="$1"
+            local content="$2"
+            local code_block="${3:-}"
+            local format="\n### %s\n%s\n"
+
+            if [[ -n "${code_block}" ]]; then
+              format="\n### %s\n\n<details>\n<summary>%s</summary>\n\n\`\`\`%s\n%s\n\`\`\`\n\n</details>\n"
+              printf "${format}" "${title}" "${title}" "${code_block}" "${content}" | tee -a ${release_md}
+            else
+              printf "${format}" "${title}" "${content}" | tee -a ${release_md}
+            fi
+          }
+
+          # 记录构建者、编译完成时间
+          record_to_markdown "Build ${device_branch} - by ${repo_diy_owner}" ""
+          record_to_markdown "Build Time" "- [x] $(date +"%Y-%m-%d %H:%M:%S %z")"
+
+          cat ${release_md}
+          echo "status=success" >> ${GITHUB_OUTPUT}
+
       - name: Upload OpenWrt to Release
         uses: ncipollo/release-action@main
         if: ${{ steps.output.outputs.status }} == 'success' && !cancelled()
@@ -434,8 +471,8 @@ jobs:
           removeArtifacts: false
           replacesArtifacts: true
           token: "${{ secrets.GITHUB_TOKEN }}"
-          # bodyFile: "${{ env.release_md }}"
-          body: ""
+          bodyFile: "${{ env.release_md }}"
+          # body: ""
 
       - name: Clear workspace
         id: clearwork
