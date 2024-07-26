@@ -18,22 +18,40 @@ on:
         type: choice
         options:
           - all
+          - 360t7
+          - livinet_zr-3020
+          - cetron_ct3003
+          - jcg_q30
+          - konka_komi-a31
+          - wr30u
+          - imou_lc-hx3001
+          - clt_r30b1
+          - abt_asr3000
+          - cmcc_a10
+          - cmcc_rax3000m
+          - cmcc_rax3000m-emmc
+          - h3c_magic-nx30-pro
           - ax3000t
+          - redmi_ax6000
+          - tplink_tl-xdr608x
+          - ruijie_rg-x60-pro
+          - jdcloud_re-cp-03
+          - glinet_gl-mt6000
+          - nokia_ea0326gmp
+          - ruijie_rg_x30e
+          - ruijie_rg_x30e_pro
+          - tplink_tl-xtr8488
 
 env:
   TZ: UTC
-  openwrt_branch: ${{ inputs.openwrt_branch }}
-  device_branch: ${{ inputs.device_branch }}
+  openwrt_branch: ${{ inputs.openwrt_branch || 'u-boot' }}
+  device_branch: ${{ inputs.device_branch || 'all' }}
 
 jobs:
   build:
     name: Build U-Boot
     runs-on: ubuntu-22.04
-    if: ${{ github.event.repository.owner.id }} == ${{ github.event.sender.id }}
     steps:
-      # - name: Checkout Code
-      #   uses: actions/checkout@v4
-
       - name: Set environment variable (${{ inputs.openwrt_branch }})
         id: var
         working-directory: /
@@ -46,12 +64,6 @@ jobs:
 
           repo_target="https://github.com/hanwckf/bl-mt798x"
           repo_target_branch="master"
-
-          echo "repo_diy=${repo_diy}" >> "$GITHUB_ENV"
-          echo "repo_diy_owner=${repo_diy_owner}" >> "$GITHUB_ENV"
-
-          echo "repo_target=${repo_target}" >> "$GITHUB_ENV"
-          echo "repo_target_branch=${repo_target_branch}" >> "$GITHUB_ENV"
 
           # ========== Build Path ==========
           dir_build="builder"
@@ -67,49 +79,23 @@ jobs:
           path_diy="${path_openwrt}/${dir_diy}"
           path_diy_branch="${path_diy}/${openwrt_branch}"
 
-          echo "path_build=${path_build}" >> "$GITHUB_ENV"
-          echo "path_openwrt=${path_openwrt}" >> "$GITHUB_ENV"
-          echo "path_output=${path_output}" >> "$GITHUB_ENV"
-          echo "path_backup=${path_backup}" >> "$GITHUB_ENV"
+          # ========== GITHUB_ENV ==========
+          env_vars=(
+            "repo_diy"
+            "repo_diy_owner"
+            "repo_target"
+            "repo_target_branch"
+            "path_build"
+            "path_openwrt"
+            "path_output"
+            "path_backup"
+            "path_diy"
+            "path_diy_branch"
+          )
+          for var in "${env_vars[@]}"; do
+            echo "${var}=${!var}" | tee -a $GITHUB_ENV
+          done
 
-          echo "path_diy=${path_diy}" >> "$GITHUB_ENV"
-          echo "path_diy_branch=${path_diy_branch}" >> "$GITHUB_ENV"
-
-          # ========== DIY Files ==========
-          # diy_config="${path_diy_branch}/${device_branch}.config"
-          # diy_feeds="${path_diy_branch}/feeds.conf.default"
-          # diy_p1_sh="${path_diy_branch}/diy-part1.sh"
-          # diy_p2_sh="${path_diy_branch}/diy-part2.sh"
-          # diy_files="${path_diy_branch}/files"
-          # release_md="${path_diy_branch}/release.md"
-
-          # echo "diy_config=${diy_config}" >> "$GITHUB_ENV"
-          # echo "diy_feeds=${diy_feeds}" >> "$GITHUB_ENV"
-          # echo "diy_p1_sh=${diy_p1_sh}" >> "$GITHUB_ENV"
-          # echo "diy_p2_sh=${diy_p2_sh}" >> "$GITHUB_ENV"
-          # echo "diy_files=${diy_files}" >> "$GITHUB_ENV"
-          # echo "release_md=${release_md}" >> "$GITHUB_ENV"
-
-          # ========== END ==========
-          echo "status=success" >> ${GITHUB_OUTPUT}
-
-      - name: Check environment variable
-        id: checkenv
-        working-directory: /
-        run: |
-          echo -e "Current working directory: $(pwd)"
-          echo -e "# ========== Repo Info =========="
-          echo -e "repo_diy: ${repo_diy}"
-          echo -e "repo_diy_owner: ${repo_diy_owner}"
-          echo -e "repo_target: ${repo_target}"
-          echo -e "repo_target_branch: ${repo_target_branch}"
-          echo -e "# ========== Build Path =========="
-          echo -e "path_build: ${path_build}"
-          echo -e "path_openwrt: ${path_openwrt}"
-          echo -e "path_output: ${path_output}"
-          echo -e "path_backup: ${path_backup}"
-          echo -e "path_diy: ${path_diy}"
-          echo -e "path_diy_branch: ${path_diy_branch}"
           # ========== END ==========
           echo "status=success" >> ${GITHUB_OUTPUT}
 
@@ -311,27 +297,37 @@ jobs:
 
           echo "status=success" >> ${GITHUB_OUTPUT}
 
+      - name: Check environment
+        id: checkenv
+        working-directory: /
+        run: |
+          echo -e "Current working directory: $(pwd)"
+
+          # List all environment variables
+          printenv
+
+          # ========== END ==========
+          echo "status=success" >> ${GITHUB_OUTPUT}
+
       - name: Compile U-Boot Cycle
         id: compile
         if: ${{ steps.clonesys.outputs.status }} == 'success' && !cancelled()
+        env:
+          device: ${{ env.device_branch }}
         run: |
           echo -e "Current working directory: $(pwd)"
 
           mkdir -p ${path_output}
 
           # Define function to compile U-Boot
-          compile_uboot() {
-            local SOC=$1
-            local BOARD=$2
-            local MULTI_LAYOUT=$3
-            local FIXED_MTDPARTS=$4
-            echo -e "Current working directory: $(pwd)"
-            echo -e "---------- Compile U-Boot of ${BOARD} ----------"
-            SOC=${SOC} BOARD=${BOARD} MULTI_LAYOUT=${MULTI_LAYOUT} FIXED_MTDPARTS=${FIXED_MTDPARTS} ./build.sh
-            cp -rf ./output/* ${path_output}
+          complie_device() {
+            local device=$1
+            local params=$2
+            IFS='|' read -ra PARAMS <<< "$params"
+            split_board_params "$device" "${PARAMS[0]}" "${PARAMS[@]:1}"
           }
 
-          process_board_params() {
+          split_board_params() {
             local BOARD=$1
             local SOC=$2
             local OTHER_PARAMS=("${@:3}") # 从第三个参数开始获取所有参数，存储到 OTHER_PARAMS 数组中
@@ -348,12 +344,25 @@ jobs:
                 rm -rf "${path_openwrt}"
                 cp -rf "${path_backup}/${openwrt_branch}" "${path_build}"
                 cd "${path_openwrt}"
-                compile_uboot "${SOC}" "${BOARD}" "${MULTI_LAYOUT}" "${FIXED_MTDPARTS}"
+                exec_build_sh "${SOC}" "${BOARD}" "${MULTI_LAYOUT}" "${FIXED_MTDPARTS}"
               done
             done
           }
 
-          # [BOARD] SOC | MULTI_LAYOUT | FIXED_MTDPARTS
+          exec_build_sh() {
+            local SOC=$1
+            local BOARD=$2
+            local MULTI_LAYOUT=$3
+            local FIXED_MTDPARTS=$4
+            echo -e "Current working directory: $(pwd)"
+            echo -e "---------- Compile U-Boot of ${BOARD} ----------"
+            SOC=${SOC} BOARD=${BOARD} MULTI_LAYOUT=${MULTI_LAYOUT} FIXED_MTDPARTS=${FIXED_MTDPARTS} ./build.sh
+            cp -rf ./output/* ${path_output}
+          }
+
+          # [BOARD] = SOC | MULTI_LAYOUT | FIXED_MTDPARTS
+          local switch_MULTI_LAYOUT="0"
+          local switch_FIXED_MTDPARTS="0,1"
           declare -A BOARD_PARAMS=(
             ["360t7"]="mt7981|0|0,1" # 360 T7/T7U/T7M
             ["livinet_zr-3020"]="mt7981|0|0,1" # ZR3020
@@ -379,10 +388,21 @@ jobs:
             ["ruijie_rg_x30e_pro"]="mt7981|0,1|0,1" # Ruijie RG-X30E Pro [with MULTI_LAYOUT]
             ["tplink_tl-xtr8488"]="mt7986|0|0,1" # TP-Link TL-XTR8488
           )
-          for BOARD in "${!BOARD_PARAMS[@]}"; do
-            IFS='|' read -ra PARAMS <<< "${BOARD_PARAMS[$BOARD]}"
-            process_board_params "${BOARD}" "${PARAMS[0]}" "${PARAMS[@]:1}" # 将SOC单独传递，其余参数作为数组传递
-          done
+
+          if [[ -z "${device}" || "${device,,}" == "all" ]]; then
+            echo "Compiling for all devices"
+            for BOARD in "${!BOARD_PARAMS[@]}"; do
+              complie_device "$BOARD" "${BOARD_PARAMS[$BOARD]}"
+            done
+          else
+            if [[ -n "${BOARD_PARAMS[${device}]}" ]]; then
+              echo "Compiling for device: ${device}"
+              complie_device "$device" "${BOARD_PARAMS[$device]}"
+            else
+              echo "Invalid device: ${device}"
+              exit 1
+            fi
+          fi
 
           echo -e "========== Build Finished =========="
           echo "status=success" >> ${GITHUB_OUTPUT}
