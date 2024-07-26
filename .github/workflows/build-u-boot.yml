@@ -362,8 +362,8 @@ jobs:
           }
 
           # [BOARD] = SOC | MULTI_LAYOUT | FIXED_MTDPARTS
-          local switch_MULTI_LAYOUT="0"
-          local switch_FIXED_MTDPARTS="0,1"
+          # local switch_MULTI_LAYOUT="0"
+          # local switch_FIXED_MTDPARTS="0,1"
           declare -A BOARD_PARAMS=(
             ["360t7"]="mt7981|0|0,1" # 360 T7/T7U/T7M
             ["livinet_zr-3020"]="mt7981|0|0,1" # ZR3020
