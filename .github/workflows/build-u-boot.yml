@@ -92,6 +92,7 @@ jobs:
             "path_backup"
             "path_diy"
             "path_diy_branch"
+            "release_md"
           )
           for var in "${env_vars[@]}"; do
             echo "${var}=${!var}" | tee -a $GITHUB_ENV
