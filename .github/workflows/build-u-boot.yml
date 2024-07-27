@@ -227,12 +227,15 @@ jobs:
             "xxd"
             "zlib1g-dev"
             "libdb++-dev"
+          )
+          packages_extra=(
             "flex"
             "jq"
+            "gcc-aarch64-linux-gnu"
           )
           sudo -E apt-get -qq -y update
           sudo -E apt-get -y install "${packages_install[@]}"
-          sudo -E apt-get -y install "gcc-aarch64-linux-gnu"
+          sudo -E apt-get -y install "${packages_extra[@]}"
           sudo -E apt-get -qq -y autoremove --purge
           sudo -E apt-get -qq clean
 
