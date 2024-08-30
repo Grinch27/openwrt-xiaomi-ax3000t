@@ -43,7 +43,6 @@ on:
           - tplink_tl-xtr8488
 
 env:
-  TZ: UTC
   openwrt_branch: ${{ inputs.openwrt_branch || 'u-boot' }}
   device_branch: ${{ inputs.device_branch || 'all' }}
 
