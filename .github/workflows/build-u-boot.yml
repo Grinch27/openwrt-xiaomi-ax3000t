@@ -47,9 +47,22 @@ env:
   device_branch: ${{ inputs.device_branch || 'all' }}
 
 jobs:
+  runner-image:
+    name: ubuntu-latest - runner-image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      RUNNER_IMAGE: ${{ steps.resolve-runner-image.outputs.RUNNER_IMAGE }}
+    steps:
+      - name: Resolve runner-image
+        id: resolve-runner-image
+        uses: Grinch27/github-actions/.github/actions/resolve-runner-image@main
+
   build:
     name: Build U-Boot
-    runs-on: ubuntu-24.04
+    needs: runner-image
+    runs-on: ${{ needs.runner-image.outputs.RUNNER_IMAGE }}
     steps:
       - name: Set environment variable (${{ inputs.openwrt_branch }})
         id: var
