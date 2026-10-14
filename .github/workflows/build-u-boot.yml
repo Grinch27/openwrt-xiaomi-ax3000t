@@ -46,12 +46,12 @@ env:
   openwrt_branch: ${{ inputs.openwrt_branch || 'u-boot' }}
   device_branch: ${{ inputs.device_branch || 'all' }}
 
+permissions: write-all
+
 jobs:
   runner-image:
     name: ubuntu-latest - runner-image
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     outputs:
       RUNNER_IMAGE: ${{ steps.resolve-runner-image.outputs.RUNNER_IMAGE }}
     steps:
